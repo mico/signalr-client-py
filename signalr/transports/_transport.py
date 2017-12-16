@@ -7,8 +7,6 @@ if sys.version_info[0] < 3:
 else:
     from urllib.parse import quote_plus
 
-import gevent
-
 
 class Transport:
     def __init__(self, session, connection):
@@ -48,7 +46,6 @@ class Transport:
         if len(message) > 0:
             data = json.loads(message)
             self._connection.received.fire(**data)
-        gevent.sleep()
 
     def _get_url(self, action, **kwargs):
         args = kwargs.copy()

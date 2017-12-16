@@ -1,5 +1,4 @@
 import json
-import gevent
 from signalr.events import EventHook
 from signalr.hubs import Hub
 from signalr.transports import AutoTransport
@@ -41,29 +40,20 @@ class Connection:
         self.__send_counter += 1
         return self.__send_counter
 
-    def start(self):
+    async def start(self):
         self.starting.fire()
-
         negotiate_data = self.__transport.negotiate()
         self.token = negotiate_data['ConnectionToken']
-
-        listener = self.__transport.start()
-
-        def wrapped_listener():
-            listener()
-            gevent.sleep()
-
-        self.__greenlet = gevent.spawn(wrapped_listener)
+        self.wait_listener = await self.__transport.start()
         self.started = True
 
     def wait(self, timeout=30):
-        gevent.joinall([self.__greenlet], timeout)
+        pass
 
-    def send(self, data):
-        self.__transport.send(data)
+    async def send(self, data):
+        await self.__transport.send(data)
 
     def close(self):
-        gevent.kill(self.__greenlet)
         self.__transport.close()
 
     def register_hub(self, name):

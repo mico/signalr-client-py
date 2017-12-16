@@ -15,8 +15,8 @@ class HubServer:
         self.__connection = connection
         self.__hub = hub
 
-    def invoke(self, method, *data):
-        self.__connection.send({
+    async def invoke(self, method, *data):
+        await self.__connection.send({
             'H': self.name,
             'M': method,
             'A': data,

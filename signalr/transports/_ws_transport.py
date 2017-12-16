@@ -1,15 +1,14 @@
 import json
 import sys
 
-import gevent
+import websockets
+import asyncio
+from ._transport import Transport
 
 if sys.version_info[0] < 3:
     from urlparse import urlparse, urlunparse
 else:
     from urllib.parse import urlparse, urlunparse
-
-from websocket import create_connection
-from ._transport import Transport
 
 
 class WebSocketsTransport(Transport):
@@ -29,24 +28,23 @@ class WebSocketsTransport(Transport):
 
         return urlunparse(url_data)
 
-    def start(self):
+    async def start(self):
         ws_url = self.__get_ws_url_from(self._get_url('connect'))
-
-        self.ws = create_connection(ws_url,
-                                    header=self.__get_headers(),
-                                    cookie=self.__get_cookie_str(),
-                                    enable_multithread=True)
         self._session.get(self._get_url('start'))
+        self.ws = await websockets.connect(ws_url, extra_headers=self.__get_headers())
+        asyncio.gather(self.loop(), return_exceptions=True)
 
-        def _receive():
-            for notification in self.ws:
-                self._handle_notification(notification)
+    async def loop(self):
+        while True:
+            try:
+                message = await self.ws.recv()
+                self._handle_notification(message)
+            except websockets.ConnectionClosed:
+                print("bittrex connection closed")
+                break
 
-        return _receive
-
-    def send(self, data):
-        self.ws.send(json.dumps(data))
-        gevent.sleep()
+    async def send(self, data):
+        await self.ws.send(json.dumps(data))
 
     def close(self):
         self.ws.close()
@@ -60,12 +58,14 @@ class WebSocketsTransport(Transport):
 
     def __get_headers(self):
         headers = self._session.headers
+        if len(self.__get_cookie_str()) > 0:
+            headers['cookie'] = self.__get_cookie_str()
         loader = WebSocketsTransport.HeadersLoader(headers)
 
         if self._session.auth:
             self._session.auth(loader)
 
-        return ['%s: %s' % (name, headers[name]) for name in headers]
+        return headers
 
     def __get_cookie_str(self):
         return '; '.join([
