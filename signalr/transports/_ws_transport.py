@@ -40,6 +40,7 @@ class WebSocketsTransport(Transport):
                 message = await self.ws.recv()
                 self._handle_notification(message)
             except websockets.ConnectionClosed:
+                self._connection.error.fire("connection closed")
                 print("bittrex connection closed")
                 break
 

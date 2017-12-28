@@ -1,4 +1,4 @@
 sseclient>=0.0.3
-websocket-client>=0.34.0
+websockets>=4.0.1
 twine>=1.6.5
 wheel>=0.26.0
