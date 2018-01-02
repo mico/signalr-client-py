@@ -43,6 +43,10 @@ class WebSocketsTransport(Transport):
                 self._connection.error.fire("connection closed")
                 print("bittrex connection closed")
                 break
+            except Exception as err:
+                self._connection.error.fire("connection closed")
+                print("unhandled exception: %s" % err)
+                break
 
     async def send(self, data):
         await self.ws.send(json.dumps(data))
